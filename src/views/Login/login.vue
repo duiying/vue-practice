@@ -49,9 +49,10 @@
 </template>
 
 <script>
+import service from '@/utils/request'
 import { reactive, ref, isRef, toRefs, onMounted } from '@vue/composition-api'
-// 引入外部方法，引入 同一个文件中的多个方法之间用逗号隔开
-import { stripscript, checkEmail, checkPassword, checkCode } from '@/utils/validate';
+// 引入外部方法，引入同一个文件中的多个方法之间用逗号隔开
+import { stripscript, checkEmail, checkPassword, checkCode } from '@/utils/validate'
   
 export default {
     name: 'login',
