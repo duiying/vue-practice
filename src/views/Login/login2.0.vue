@@ -49,17 +49,15 @@
 </template>
 
 <script>
-import { reactive, ref, isRef, toRefs, onMounted } from '@vue/composition-api'
 // 引入外部方法，引入 同一个文件中的多个方法之间用逗号隔开
 import { stripscript, checkEmail, checkPassword, checkCode } from '@/utils/validate';
   
 export default {
     name: 'login',
-    setup(props, context){
-        // 这里面放置data数据、生命周期、自定义的函数
-
+    components: {},
+    data(){
         // 校验邮箱
-        let validateEmail = (rule, value, callback) => {
+        var validateEmail = (rule, value, callback) => {
             if (value === '') {
                 callback(new Error('请输入用户名！'));
             } else if (!checkEmail(value)) {
@@ -71,10 +69,10 @@ export default {
         };
 
         // 校验密码
-        let validatePassword = (rule, value, callback) => {
+        var validatePassword = (rule, value, callback) => {
             // 过滤后的数据
-            ruleForm.password = stripscript(value);
-            value = ruleForm.password;
+            this.ruleForm.password = stripscript(value);
+            value = this.ruleForm.password;
 
             if (value === '') {
                 callback(new Error('请输入密码！'));
@@ -86,12 +84,10 @@ export default {
         };
 
         // 校验重复
-        let validatePasswords = (rule, value, callback) => {
-            if (model.value === 'login') {callback(); }
-
+        var validatePasswords = (rule, value, callback) => {
             // 过滤后的数据
-            ruleForm.passwords = stripscript(value);
-            value = ruleForm.passwords;
+            this.ruleForm.passwords = stripscript(value);
+            value = this.ruleForm.passwords;
 
             if (value === '') {
                 callback(new Error('请输入重复密码！'));
@@ -103,7 +99,7 @@ export default {
         };
 
         // 校验验证码
-        let validateCode = (rule, value, callback) => {
+        var validateCode = (rule, value, callback) => {
             if (value === '') {
                 callback(new Error('请输入验证码！'));
             } else if (!checkCode(value)) {
@@ -113,67 +109,49 @@ export default {
             }    
         };
 
-        /**
-         * 声明数据
-         */
-        // 引用数据类型用reactive、基础数据类型用ref
-        const menuTab = reactive([
-            {text: '登录', current: true, type: 'login'},
-            {text: '注册', current: false, type: 'register'}
-        ])
-        console.log(menuTab)
-
-        // 模块值
-        const model = ref('login')
-        console.log(model.value)
-        console.log(isRef(model) ? true : false)
-
-        // toRefs之后，需要用.value来取值
-        const obj = reactive({
-            x: 0,
-            y: 1
-        })
-        const objToRefs = toRefs(obj)
-        console.log(objToRefs.x.value)
-
-        // 表单绑定数据
-        const ruleForm = reactive({
-            username: '',
-            password: '',
-            passwords: '',
-            code: ''
-        })
-        // 表单验证规则
-        const rules = reactive({
-            username: [
-                { validator: validateEmail, trigger: 'blur' }
+        return {
+            menuTab: [
+                {text: '登录', current: true, type: 'login'},
+                {text: '注册', current: false, type: 'register'}
             ],
-            password: [
-                { validator: validatePassword, trigger: 'blur' }
-            ],
-            passwords: [
-                { validator: validatePasswords, trigger: 'blur' }
-            ],
-            code: [
-                { validator: validateCode, trigger: 'blur' }
-            ],
-        })
-
-        /**
-         * 声明函数
-         */
-        const toggleMenu = (item => {
+            model: 'login',
+            ruleForm: {
+                username: '',
+                password: '',
+                passwords: '',
+                code: ''
+            },
+            rules: {
+                username: [
+                    { validator: validateEmail, trigger: 'blur' }
+                ],
+                password: [
+                    { validator: validatePassword, trigger: 'blur' }
+                ],
+                passwords: [
+                    { validator: validatePasswords, trigger: 'blur' }
+                ],
+                code: [
+                    { validator: validateCode, trigger: 'blur' }
+                ],
+            },
+        };
+    },
+    created(){},
+    mounted(){},
+    methods: {
+        toggleMenu(item){
             // ES6写法
-            menuTab.forEach(elem => {
+            this.menuTab.forEach(elem => {
                 elem.current = false;
             });
             item.current = true;
 
             // 改变model
-            model.value = item.type;
-        })
-        const submitForm = (formName => {
-            context.refs[formName].validate((valid) => {
+            this.model = item.type;
+        },
+        submitForm(formName) {
+            this.$refs[formName].validate((valid) => {
             if (valid) {
                 alert('submit!');
             } else {
@@ -181,25 +159,10 @@ export default {
                 return false;
             }
             });
-        })
-
-        /**
-         * 生命周期
-         */
-        // 挂载完成后
-        onMounted(() => {
-            
-        })
-
-        return {
-            menuTab,
-            model,
-            ruleForm,
-            rules,
-            toggleMenu,
-            submitForm
         }
     },
+    props: {},
+    watch: {},
 }
 </script>
 
