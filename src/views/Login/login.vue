@@ -33,7 +33,7 @@
                             <el-input v-model.number="ruleForm.code" minlength="6" maxlength="6"></el-input>
                         </el-col>
                         <el-col :span="12">
-                            <el-button type="success" class="block" size="mini">获取验证码</el-button>
+                            <el-button type="success" class="block" size="mini" @click="getSms()">获取验证码</el-button>
                         </el-col>
                     </el-row>
                 
@@ -49,7 +49,7 @@
 </template>
 
 <script>
-import service from '@/utils/request'
+import { sendSms } from '@/api/login'
 import { reactive, ref, isRef, toRefs, onMounted } from '@vue/composition-api'
 // 引入外部方法，引入同一个文件中的多个方法之间用逗号隔开
 import { stripscript, checkEmail, checkPassword, checkCode } from '@/utils/validate'
@@ -173,6 +173,14 @@ export default {
             // 改变model
             model.value = item.type;
         })
+
+        const getSms = (() => {
+            sendSms({username : ruleForm.username})
+        })
+
+        /**
+         * 提交表单
+         */
         const submitForm = (formName => {
             context.refs[formName].validate((valid) => {
             if (valid) {
@@ -189,7 +197,7 @@ export default {
          */
         // 挂载完成后
         onMounted(() => {
-            
+            console.log(process.env.VUE_APP_ABC)
         })
 
         return {
@@ -198,6 +206,7 @@ export default {
             ruleForm,
             rules,
             toggleMenu,
+            getSms,
             submitForm
         }
     },
