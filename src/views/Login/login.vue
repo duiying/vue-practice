@@ -40,7 +40,7 @@
                 </el-form-item>
 
                 <el-form-item>
-                    <el-button type="danger" @click="submitForm('ruleForm')" class="login-btn block">提交</el-button>
+                    <el-button type="danger" @click="submitForm('ruleForm')" class="login-btn block" :disabled="loginButtonStatus">{{ model === 'login' ? '登录' : '注册' }}</el-button>
                 </el-form-item>
             </el-form>
             <!-- 表单 end -->
@@ -56,7 +56,7 @@ import { stripscript, checkEmail, checkPassword, checkCode } from '@/utils/valid
   
 export default {
     name: 'login',
-    setup(props, context){
+    setup(props, {refs, root}){
         // 这里面放置data数据、生命周期、自定义的函数
 
         // 校验邮箱
@@ -129,6 +129,9 @@ export default {
         console.log(model.value)
         console.log(isRef(model) ? true : false)
 
+        // 按钮禁用状态
+        const loginButtonStatus = ref(true)
+
         // toRefs之后，需要用.value来取值
         const obj = reactive({
             x: 0,
@@ -175,7 +178,20 @@ export default {
         })
 
         const getSms = (() => {
-            sendSms({username : ruleForm.username})
+            if (!ruleForm.username) {
+                // root 在 3.0 中相当于 this
+                root.$message.error('邮箱不能为空！')
+                return false
+            }
+            if (!checkEmail(ruleForm.username)) {
+                root.$message.error('邮箱格式错误！')
+                return false
+            }
+            sendSms({username : ruleForm.username, module : 'login'}).then(response => {
+                console.log(response)
+            }).catch(error => {
+                console.log(error)
+            })
         })
 
         /**
@@ -203,6 +219,7 @@ export default {
         return {
             menuTab,
             model,
+            loginButtonStatus,
             ruleForm,
             rules,
             toggleMenu,
