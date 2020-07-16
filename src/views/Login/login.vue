@@ -6,7 +6,7 @@
             </ul>
 
             <!-- 表单 start -->
-            <el-form :model="ruleForm" status-icon :rules="rules" ref="ruleForm" label-width="100px" class="login-form" size="mini">
+            <el-form :model="ruleForm" status-icon :rules="rules" ref="loginForm" label-width="100px" class="login-form" size="mini">
                 <el-form-item prop="username" class="item-from">
                     <label>邮箱</label>
                     <el-input type="text" v-model="ruleForm.username" autocomplete="off"></el-input>
@@ -30,17 +30,17 @@
                     <label>验证码</label>
                     <el-row :gutter="10">
                         <el-col :span="12">
-                            <el-input v-model.number="ruleForm.code" minlength="6" maxlength="6"></el-input>
+                            <el-input v-model="ruleForm.code" minlength="6" maxlength="6"></el-input>
                         </el-col>
                         <el-col :span="12">
-                            <el-button type="success" class="block" size="mini" @click="getSms()">获取验证码</el-button>
+                            <el-button type="success" class="block" size="mini" @click="getSms()" :disabled="codeButtonStatus.status">{{ codeButtonStatus.text }}</el-button>
                         </el-col>
                     </el-row>
                 
                 </el-form-item>
 
                 <el-form-item>
-                    <el-button type="danger" @click="submitForm('ruleForm')" class="login-btn block" :disabled="loginButtonStatus">{{ model === 'login' ? '登录' : '注册' }}</el-button>
+                    <el-button type="danger" @click="submitForm('loginForm')" class="login-btn block" :disabled="loginButtonStatus">{{ model === 'login' ? '登录' : '注册' }}</el-button>
                 </el-form-item>
             </el-form>
             <!-- 表单 end -->
@@ -49,7 +49,7 @@
 </template>
 
 <script>
-import { sendSms } from '@/api/login'
+import { sendSms, Register, Login } from '@/api/login'
 import { reactive, ref, isRef, toRefs, onMounted } from '@vue/composition-api'
 // 引入外部方法，引入同一个文件中的多个方法之间用逗号隔开
 import { stripscript, checkEmail, checkPassword, checkCode } from '@/utils/validate'
@@ -96,7 +96,7 @@ export default {
 
             if (value === '') {
                 callback(new Error('请输入重复密码！'));
-            } else if (value != this.ruleForm.password) {
+            } else if (value != ruleForm.password) {
                 callback(new Error('重复密码不正确！'));
             } else {
                 callback();
@@ -124,6 +124,8 @@ export default {
         ])
         console.log(menuTab)
 
+        const timer = ref(null)
+
         // 模块值
         const model = ref('login')
         console.log(model.value)
@@ -131,6 +133,11 @@ export default {
 
         // 按钮禁用状态
         const loginButtonStatus = ref(true)
+
+        const codeButtonStatus = reactive({
+            status : false,
+            text : '发送验证码'
+        })
 
         // toRefs之后，需要用.value来取值
         const obj = reactive({
@@ -175,6 +182,10 @@ export default {
 
             // 改变model
             model.value = item.type;
+
+            // 重置表单
+            // this.$refs[formName].resetFields(); // 2.0
+            refs.loginForm.resetFields(); // 3.0
         })
 
         const getSms = (() => {
@@ -187,25 +198,105 @@ export default {
                 root.$message.error('邮箱格式错误！')
                 return false
             }
-            sendSms({username : ruleForm.username, module : 'login'}).then(response => {
-                console.log(response)
+
+            codeButtonStatus.status = true
+            codeButtonStatus.text = '发送中'
+
+            loginButtonStatus.value = false
+            // 倒计时
+            countDown(60)
+
+            setTimeout(() => {
+                sendSms({username : ruleForm.username, module : model.value}).then(response => {
+                let data = response.data
+                root.$message({
+                    message : data.message,
+                    type : 'success'
+                })
             }).catch(error => {
                 console.log(error)
             })
+            }, 3000)
         })
 
         /**
          * 提交表单
          */
         const submitForm = (formName => {
-            context.refs[formName].validate((valid) => {
-            if (valid) {
-                alert('submit!');
-            } else {
-                console.log('error submit!!');
-                return false;
-            }
+            refs[formName].validate((valid) => {
+                if (valid) {
+                    if (model.value === 'login') {
+                        login()
+                    } else {
+                        register()
+                    }
+                    
+                } else {
+                    console.log('error submit!!');
+                    return false;
+                }
             });
+        })
+
+        const login = (() => {
+            let data = {
+                username : ruleForm.username,
+                password : ruleForm.password,
+                code : ruleForm.code,
+            }
+            Login(data).then(response => {
+                let data = response.data
+                root.$message({
+                    message : data.message,
+                    type : 'success'
+                })
+                console.log(response)
+            }).catch(error => {
+
+            })
+        })
+
+        const register = (() => {
+            let data = {
+                username : ruleForm.username,
+                password : ruleForm.password,
+                code : ruleForm.code,
+                module : 'register'
+            }
+            Register(data).then(response => {
+                let data = response.data
+                root.$message({
+                    message : data.message,
+                    type : 'success'
+                })
+                toggleMenu(menuTab[0])
+                clearCountDown()
+            }).catch(error => {
+
+            })
+        })
+
+        const countDown = ((number) => {
+            if (timer.value) {clearInterval(timer.value)}
+            
+            let time = number
+
+            timer.value = setInterval(() => {
+                time--
+                if (time === 0) {
+                    clearInterval(timer.value)
+                    codeButtonStatus.status = false
+                    codeButtonStatus.text = '再次获取 '
+                } else {
+                    codeButtonStatus.text = `倒计时${time}秒`  
+                }
+            }, 1000)
+        })
+
+        const clearCountDown = (() => {
+            codeButtonStatus.status = false
+            codeButtonStatus.text = '获取验证码'
+             clearInterval(timer.value)
         })
 
         /**
@@ -220,6 +311,7 @@ export default {
             menuTab,
             model,
             loginButtonStatus,
+            codeButtonStatus,
             ruleForm,
             rules,
             toggleMenu,
